@@ -1,1 +1,136 @@
 
+IDENTIFICATION DIVISION.
+PROGRAM-ID. POLICY-MANAGEMENT.
+AUTHOR. Your Name.
+
+DATA DIVISION.
+FILE SECTION.
+FD POLICY-FILE
+    LABEL RECORDS ARE STANDARD
+    DATA RECORD IS POLICY-REC.
+
+01 POLICY-REC.
+   05 POLICY-NUMBER       PIC 9(5).
+   05 POLICY-TYPE         PIC X(20).
+   05 INSURED-NAME        PIC X(30).
+   05 PREMIUM-AMOUNT      PIC 9(6)V99.
+   05 COVERAGE-DETAILS    PIC X(100).
+
+WORKING-STORAGE SECTION.
+01 WS-INPUT-AREA.
+   05 WS-POLICY-NUM-IN    PIC 9(5).
+   05 WS-POLICY-TYPE-IN   PIC X(20).
+   05 WS-INSURED-NAME-IN  PIC X(30).
+   05 WS-PREMIUM-AMT-IN   PIC 9(6)V99.
+   05 WS-COVERAGE-IN      PIC X(100).
+
+01 WS-UPDATE-AREA.
+   05 WS-NEW-PREMIUM-AMT  PIC 9(6)V99.
+
+01 WS-ERROR-FLAG         PIC X VALUE 'N'.
+
+PROCEDURE DIVISION.
+MAIN-LOGIC.
+    PERFORM UNTIL WS-ERROR-FLAG = 'Y'
+        DISPLAY "1. Add Policy"
+        DISPLAY "2. Update Premium Amount"
+        DISPLAY "3. Display Policies"
+        DISPLAY "4. Exit"
+        DISPLAY "Enter your choice (1-4): "
+        ACCEPT WS-CHOICE
+
+        EVALUATE WS-CHOICE
+            WHEN 1
+                PERFORM ADD-POLICY
+            WHEN 2
+                PERFORM UPDATE-PREMIUM
+            WHEN 3
+                PERFORM DISPLAY-POLICIES
+            WHEN 4
+                DISPLAY "Exiting program..."
+                MOVE 'Y' TO WS-ERROR-FLAG
+            WHEN OTHER
+                DISPLAY "Invalid choice. Please enter 1 to 4."
+        END-EVALUATE
+    END-PERFORM.
+
+    CLOSE POLICY-FILE.
+    STOP RUN.
+
+ADD-POLICY.
+    DISPLAY "Enter Policy Number (5 digits): "
+    ACCEPT WS-POLICY-NUM-IN
+    DISPLAY "Enter Policy Type (max 20 characters): "
+    ACCEPT WS-POLICY-TYPE-IN
+    DISPLAY "Enter Insured Person's Name (max 30 characters): "
+    ACCEPT WS-INSURED-NAME-IN
+    DISPLAY "Enter Premium Amount (xxxxxx.xx format): "
+    ACCEPT WS-PREMIUM-AMT-IN
+    DISPLAY "Enter Coverage Details (max 100 characters): "
+    ACCEPT WS-COVERAGE-IN
+
+    INSERT INTO POLICY_TABLE
+                 (
+                  POLICY_NUM,
+                  POLICY_TYPE
+                  INSURED_NAME,
+                  PREMIUM_AMT,
+                  COVERAGE_AMT)
+                 )
+                VALUES
+                 (
+                  :WS-POLICY-NUM-IN,
+                  :WS-POLICY-TYPE-IN
+                  :WS-INSURED-NAME-IN
+                  :WS-PREMIUM-AMT-IN
+                  :WS-COVERAGE-IN)
+                 )
+           END-EXEC
+
+           EVALUATE SQLCODE 
+             WHEN 000
+              DISPLAY 'INSERTED SUCCESSFUL'
+             WHEN OTHER
+              DISPLAY ' INSER NOT SUCCESSFU'
+           END-EVALUATE.
+
+
+UPDATE-PREMIUM.
+    DISPLAY "Enter Policy Number to update premium: "
+    ACCEPT WS-POLICY-NUM-IN
+    DISPLAY "Enter New Premium Amount (xxxxxx.xx format): "
+    ACCEPT WS-NEW-PREMIUM-AMT
+
+    MOVE WS-NEW-PREMIUM-AMT TO PREMIUM-AMOUNT.
+
+    UPDATE POLICY_TABLE
+    SET PREMIUM_AMT TO :WS-PREMIUM-AMT
+    WHERE POLICY_NUM = :WS-POLICY-NUM-IN
+
+
+DISPLAY-POLICIES.
+    SELECT        POLICY_NUM,
+                  POLICY_TYPE,
+                  INSURED_NAME,
+                  PREMIUM_AMT,
+                  COVERAGE_AMT
+   IN TO 
+                  :WS-POLICY-NUM,
+                  :WS-POLICY-TYPE,
+                  :WS-INSURED-NAME,
+                  :WS-PREMIUM-AMT,
+                  :WS-COVERAGE)
+
+   FROM POLICY_TABLE
+
+    DISPLAY "List of Policies:"
+    DISPLAY "--------------------------"
+
+                DISPLAY "Policy Number    : " WS-POLICY-NUM
+                DISPLAY "Policy Type      : " WS-POLICY-TYPE
+                DISPLAY "Insured Person   : " WS-INSURED-NAME
+                DISPLAY "Premium Amount   : " WS-PREMIUM-AMOUNT
+                DISPLAY "Coverage Details : " WS-COVERAGE-DETAILS
+                DISPLAY "--------------------------"
+  END-DISPLAY-POPICIES.
+
